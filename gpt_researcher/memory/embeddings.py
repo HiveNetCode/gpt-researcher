@@ -139,7 +139,7 @@ class Memory:
                 )
             case "hiveGPT_router":
                 # HiveGPTrouter uses the local ModelManager to manage LLM models
-                from models.model_manager import ModelManager
+                from ..models.model_manager import ModelManager
 
                 model_manager = ModelManager()
                 _embeddings = model_manager.load_embedding_model(model)

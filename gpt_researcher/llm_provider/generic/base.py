@@ -248,7 +248,7 @@ class GenericLLMProvider:
             llm = ChatNetmind(**kwargs)
         elif provider == "hiveGPT_router":
             # HiveGPTrouter uses the local ModelManager to manage LLM models
-            from models.model_manager import ModelManager
+            from ...models.model_manager import ModelManager
 
             model_manager = ModelManager()
             model_name = kwargs.get("model", "default")
