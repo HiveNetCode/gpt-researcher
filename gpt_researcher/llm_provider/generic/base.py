@@ -33,6 +33,7 @@ _SUPPORTED_PROVIDERS = {
     "vllm_openai",
     "aimlapi",
     "netmind",
+    "hiveGPT_router",
 }
 
 NO_SUPPORT_TEMPERATURE_MODELS = [
@@ -245,6 +246,13 @@ class GenericLLMProvider:
             from langchain_netmind import ChatNetmind
 
             llm = ChatNetmind(**kwargs)
+        elif provider == "hiveGPT_router":
+            # HiveGPTrouter uses the local ModelManager to manage LLM models
+            from models.model_manager import ModelManager
+
+            model_manager = ModelManager()
+            model_name = kwargs.get("model", "default")
+            llm = model_manager.load_llm_model(model_name)
         else:
             supported = ", ".join(_SUPPORTED_PROVIDERS)
             raise ValueError(

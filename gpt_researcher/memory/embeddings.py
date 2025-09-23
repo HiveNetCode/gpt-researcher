@@ -24,6 +24,7 @@ _SUPPORTED_PROVIDERS = {
     "bedrock",
     "aimlapi",
     "netmind",
+    "hiveGPT_router",
 }
 
 
@@ -136,6 +137,12 @@ class Memory:
                     openai_api_base=os.getenv("AIMLAPI_BASE_URL", "https://api.aimlapi.com/v1"),
                     **embdding_kwargs,
                 )
+            case "hiveGPT_router":
+                # HiveGPTrouter uses the local ModelManager to manage LLM models
+                from models.model_manager import ModelManager
+
+                model_manager = ModelManager()
+                _embeddings = model_manager.load_embedding_model(model)
             case _:
                 raise Exception("Embedding not found.")
 
