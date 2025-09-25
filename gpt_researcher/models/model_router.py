@@ -171,9 +171,12 @@ class ModelRouter:
     def refresh(self):
         """Refreshes the map of served models."""
         try:
-            response = requests.get(self.models_health_endpoint)
+            self.logger.info(f"Refreshing models from {self.models_health_endpoint} ...")
+            response = requests.get(self.models_health_endpoint, timeout=5)
             response.raise_for_status()
+
             models_json = response.json()
+            self.logger.info(f"Models endpoint returned {len(models_json)} entries")
 
             models = {}
             embeddings = {}
@@ -185,29 +188,36 @@ class ModelRouter:
                 name = model["model_name"]
                 max_len = model["max_model_len"]
                 openai_endpoint = self._generate_openai_base(alias=alias)
+
                 if model["capabilities"] is not None:
                     is_embedding = self.embedding_models_tag in list(model["capabilities"])
                     is_reranker = self.reranking_models_tag in list(model["capabilities"])
+
                 if is_embedding:
-                    batch_size = 0
-                    stats = model["stats"]
-                    if stats is not None:
-                        batch_size = stats["batch_size"]
-                    backend = model["backend"]
+                    stats = model.get("stats") or {}
                     embeddings[name] = EmbeddingModel(
-                        name=name, alias=alias, openai_endpoint=openai_endpoint, batch_size=batch_size, backend=backend
+                        name=name,
+                        alias=alias,
+                        openai_endpoint=openai_endpoint,
+                        batch_size=stats.get("batch_size", 0),
+                        backend=model.get("backend", "unknown"),
                     )
-                if is_reranker:
-                    batch_size = 0
-                    stats = model["stats"]
-                    if stats is not None:
-                        batch_size = stats["batch_size"]
-                    backend = model["backend"]
+                elif is_reranker:
+                    stats = model.get("stats") or {}
                     rerankers[name] = RerankingModel(
-                        name=name, alias=alias, openai_endpoint=openai_endpoint, batch_size=batch_size, backend=backend
+                        name=name,
+                        alias=alias,
+                        openai_endpoint=openai_endpoint,
+                        batch_size=stats.get("batch_size", 0),
+                        backend=model.get("backend", "unknown"),
                     )
-                if not is_embedding and not is_reranker:
-                    models[name] = LLMModel(name=name, alias=alias, openai_endpoint=openai_endpoint, max_len=max_len)
+                else:
+                    models[name] = LLMModel(
+                        name=name,
+                        alias=alias,
+                        openai_endpoint=openai_endpoint,
+                        max_len=max_len,
+                    )
 
             self.served_models = models
             self._sort_language_models()
@@ -216,7 +226,9 @@ class ModelRouter:
             self.logger.info("Models map successfully refreshed.")
 
         except requests.RequestException as e:
-            self.logger.error(f"Failed to refresh models map: {e}")
+            self.logger.error(
+                f"Failed to refresh models map from {self.models_health_endpoint}: {e}"
+            )
             self.served_models = {}
             self.served_embedding_models = {}
             self.served_reranking_models = {}
