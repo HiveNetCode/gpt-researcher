@@ -111,9 +111,13 @@ class TavilySearch:
             sources = results.get("results", [])
             if not sources:
                 raise Exception("No results found with Tavily API search.")
-            # Return the results
+            # Return the results with standardized schema
             search_response = [
-                {"href": obj["url"], "body": obj["content"]} for obj in sources
+                {
+                    "title": obj.get("title", "No Title"),
+                    "href": obj["url"], 
+                    "body": obj["content"]
+                } for obj in sources
             ]
         except Exception as e:
             print(f"Error: {e}. Failed fetching sources. Resulting in empty response.")
